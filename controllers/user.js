@@ -3,8 +3,22 @@
 var validator = require('validator');
 var fs = require('fs');
 var path = require('path');
+const bcrypt = require('bcrypt');
 
 var User = require('../models/user')
+
+const encript = (pass, saltDefault) => {
+  if (saltDefault) {
+    var salt = saltDefault;
+  } else {
+    var salt = bcrypt.genSaltSync(15);
+  }
+  const hash = bcrypt.hashSync(pass, salt);
+  return {
+    salt,
+    hash
+  };
+}
 
 var controller = {
 
@@ -15,16 +29,15 @@ var controller = {
   },
 
   save: (req, res) => {
-    //Recoger parametros por post
     var params = req.body;
 
-    //Validar datos (validator)
     try {
       var validate_name = !validator.isEmpty(params.name);
       var validate_lastName = !validator.isEmpty(params.lastName);
       var validate_user = !validator.isEmpty(params.user);
       var validate_email = !validator.isEmpty(params.email);
       var validate_password = !validator.isEmpty(params.password);
+      var validate_typeUser = !validator.isEmpty(params.typeUser);
 
     } catch (err) {
       return res.status(404).send({
@@ -34,21 +47,23 @@ var controller = {
     }
 
     if (validate_name && validate_lastName && validate_user
-      && validate_email && validate_password) {
+      && validate_email && validate_password && validate_typeUser) {
 
+      var pass = encript(params.password, null);      
       var user = new User();
       user.name = params.name;
       user.lastName = params.lastName;
       user.user = params.user;
       user.email = params.email;
-      user.password = params.password;
+      user.password = pass.hash;
+      user.salt = pass.salt;
+      user._idTypeUser = params.typeUser;
 
       user.save((err, userStored) => {
-        console.log(userStored);
         if (err || !userStored) {
           return res.status(404).send({
             status: 'error',
-            message: 'El articulo no se ha guardado'
+            message: 'El usuario no se ha guardado'
           });
         }
 
@@ -66,91 +81,99 @@ var controller = {
     }
   },
 
-  getArticles: (req, res) => {
-    var query = Article.find({});
-    //Ultimos articulos
-    var last = req.params.last;
-    if (last || last != undefined) query.limit(1);
-
-    query.sort('_id').exec((err, articles) => {
-      if (err || !articles) {
+  getUsers: (req, res) => {
+    User.find((err, users) => {
+      if (err || !users) {
         return res.status(404).send({
           status: 'error',
-          message: 'No hay articulos para mostrar!'
+          message: 'No hay usuarios para mostrar!'
         });
       }
 
       return res.status(200).send({
         status: 'success',
-        articles
+        users
       });
     })
   },
 
-  getArticle: (req, res) => {
-    //Recoger el id de la url
-    var articleId = req.params.id;
-
-    //Comprobar que existe
-    if (!articleId || articleId == null) {
+  getUser: (req, res) => {
+    var username = req.body.username
+    if (!username || username == null) {
       return res.status(404).send({
         status: 'error',
-        messagge: 'Debe enviar el articulo a buscar!'
+        messagge: 'Debe enviar el usuario a buscar!'
       });
     }
-
-    //Buscar el articulo
-    Article.findById(articleId, (err, article) => {
-      if (err || !article) {
+    User.findOne({ "user": username }, (err, user) => {
+      if (err || !user) {
         return res.status(404).send({
           status: 'error',
-          message: 'No se encontro el articulo!'
+          message: 'No se encontro el usuario!'
         });
       }
-
-      //Devolver en json
       return res.status(200).send({
         status: 'success',
-        article
+        user
       });
     })
   },
 
   update: (req, res) => {
-    //Obtener el id del articulo por la url
-    var articleId = req.params.id;
-
-    //Recoger los datos que llegan por put
     var params = req.body;
+    const data = {
+      name: params.name,
+      lastName: params.lastName,
+      user: params.user,
+      email: params.email,
+      password: '',
+      typeUser: params.typeUser
+    }
 
-    //Validar datos
     try {
-      var validate_tittle = !validator.isEmpty(params.tittle);
-      var validate_content = !validator.isEmpty(params.content);
+      var validate_id = !validator.isEmpty(params.id);
+      var validate_name = !validator.isEmpty(params.name);
+      var validate_lastName = !validator.isEmpty(params.lastName);
+      var validate_user = !validator.isEmpty(params.user);
+      var validate_email = !validator.isEmpty(params.email);
+      var validate_password = !validator.isEmpty(params.password);
+      var validate_typeUser = !validator.isEmpty(params.typeUser);
+
     } catch (err) {
-      return res.status(500).send({
+      return res.status(404).send({
         status: 'error',
         message: 'faltan datos por enviar'
       });
     }
 
-    if (validate_tittle && validate_content) {
-      //Find and update
-      Article.findByIdAndUpdate({ _id: articleId }, params, { new: true },
-        (err, articleUpdate) => {
-          if (err || !articleUpdate) {
+    if (validate_id && validate_name && validate_lastName && validate_user
+      && validate_email && validate_password && validate_typeUser) {      
+
+      User.findOne({ "_id": params.id }, (err, user) => {
+        if (err || !user) {
+          return res.status(404).send({
+            status: 'error',
+            message: 'No se encontro el usuario!'
+          });
+        }
+        var pass = encript(params.password, user.salt);
+        data.password = pass.hash;
+
+        User.findByIdAndUpdate({ _id: params.id }, data, { new: true },
+          (err, userUpdate) => {
+          if (err || !userUpdate) {
             return res.status(500).send({
               status: 'error',
-              message: 'Error al actualizar el articulo!'
+              message: 'Error al actualizar el usuario!'
             });
           }
 
           return res.status(200).send({
             status: 'success',
-            article: articleUpdate
+            user: userUpdate
           });
         });
-      //Devolver respuesta
+      });
     } else {
       return res.status(404).send({
         status: 'error',

@@ -2,7 +2,8 @@
 
 var validator = require('validator');
 var jwt = require('jsonwebtoken');
-var User = require('../models/user')
+var User = require('../models/user');
+const bcrypt = require('bcrypt');
 
 var controller = {
 
@@ -23,15 +24,15 @@ var controller = {
           message: 'Usuario no registrado!'
         });
       } else {
-        if (!(username === user.user && password === user.password)) {
-          return res.status(401).send({
+        
+        if (!(username === user.user && bcrypt.compareSync(password, user.password))) {
+          return res.status(404).send({
             error: 'usuario o contraseña inválidos'
           })
         }
-
+        
         var tokenData = {
           username: username
-          // ANY DATA
         }
 
         var token = jwt.sign(tokenData, 'Secret Password', {
