@@ -14,7 +14,7 @@ var controller = {
     });
   },
 
-  save: (req, res) => {
+  save: async (req, res) => {
     var params = req.body;
     /*try {
       var validate_name = !validator.isEmpty(params.name);
@@ -43,19 +43,18 @@ var controller = {
       client.estadoCivil = params.estadoCivil;
       client.state = true;
 
-      client.save((err, clientStored) => {
-        if (err || !clientStored) {
-          return res.status(404).send({
-            status: 'error',
-            message: 'El cliente no se ha guardado'
-          });
-        }
-
+      try {
+        var clientStored = await client.save();
         return res.status(200).send({
           status: 'success',
           client: clientStored
         });
-      })
+      } catch (err) {
+        return res.status(404).send({
+          status: 'error',
+          message: 'El cliente no se ha guardado ' + err
+        });
+      }
 
     /*} else {
       return res.status(500).send({
@@ -65,50 +64,21 @@ var controller = {
     }*/
   },
 
-  getClients: (req, res) => {
-    Client.find({}, (err, client) => {
-      if (err || !client) {
-        return res.status(404).send({
-          status: 'error',
-          message: 'No hay menus para mostrar!'
-        });
-      }
-
+  getClients: async (req, res) => {
+    try {
+      var clientStored = await Client.find({});
       return res.status(200).send({
         status: 'success',
-        client
+        client: clientStored
       });
-    })    
-  },
-
-  getUser: (req, res) => {
-    var username = req.body.username
-
-    //Comprobar que existe
-    if (!username || username == null) {
+    } catch (err) {
       return res.status(404).send({
         status: 'error',
-        messagge: 'Debe enviar el usuario a buscar!'
+        message: err
       });
     }
-
-    //Buscar el articulo
-    User.findOne({ "user": username }, (err, user) => {
-      if (err || !user) {
-        return res.status(404).send({
-          status: 'error',
-          message: 'No se encontro el usuario!'
-        });
-      }
-
-      //Devolver en json
-      return res.status(200).send({
-        status: 'success',
-        user
-      });
-    })
   },
-
+   
   update: (req, res) => {
     //Obtener el id del articulo por la url
     var articleId = req.params.id;
@@ -152,25 +122,21 @@ var controller = {
     }
   },
 
-  delete: (req, res) => {
+  delete: async (req, res) => {
     var params = req.body;    
     var documento = params.nroDoc;  
-
-    Client.findOneAndDelete({ nroDoc: documento }, (err, clientRemoved) => {
-      console.log(err);
-      console.log(clientRemoved);
-      if (err || !clientRemoved) {
-        return res.status(500).send({
-          status: 'error',
-          message: 'Error al borrar el articulo!'
-        });
-      }
-
+    try {
+      var clientRemoved = await Client.findOneAndDelete({ nroDoc: documento });
       return res.status(200).send({
         status: 'success',
         client: clientRemoved
       });
-    })
+    } catch (err) {
+      return res.status(404).send({
+        status: 'error',
+        message: err
+      });
+    }
   }
 };//End controller
 

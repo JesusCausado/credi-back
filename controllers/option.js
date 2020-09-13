@@ -15,7 +15,7 @@ var controller = {
     });
   },
 
-  save: (req, res) => {
+  save: async (req, res) => {
     var params = req.body;
     try {
       var validate_name = !validator.isEmpty(params.name);
@@ -36,21 +36,20 @@ var controller = {
       option.state = true,
       option.systemName = params.systemName;
       option.route = params.route;
-      option._idMenu = params.menu;
+      option.idMenu = params.menu;
 
-      option.save((err, optionStored) => {
-        if (err || !optionStored) {
-          return res.status(404).send({
-            status: 'error',
-            message: 'La opcion no se ha guardado'
-          });
-        }
-
+      try {
+        var clientStored = await option.save();
         return res.status(200).send({
           status: 'success',
           option: optionStored
         });
-      })
+      } catch (err) {
+        return res.status(404).send({
+          status: 'error',
+          message: 'La opcion no se ha guardado ' + err
+        });
+      }
 
     } else {
       return res.status(500).send({
@@ -60,10 +59,10 @@ var controller = {
     }
   },
 
-  getOptions: (req, res) => {
+  getOptions: async (req, res) => {
     var menu = req.body.menu;
     var typeUser = req.body.typeUser;
-    /*Option.find({ "_idMenu": menu }, (err, option) => {
+    /*Option.find({ "idMenu": menu }, (err, option) => {
       if (err || !option) {
         return res.status(404).send({
           status: 'error',
@@ -76,14 +75,36 @@ var controller = {
         option
       });
     })*/
-    OptionUser.find({ "_idTypeUser": typeUser  }, (err, optionUsers) => {
+
+    try {
+      var optionUsers = await OptionUser.find({ "idTypeUser": typeUser  });
+      try {
+        var option = await Option.populate(optionUsers, { path: "idOption", match: {idMenu: menu}});
+        return res.status(200).send({
+          status: 'success',
+          option: option
+        });
+      } catch (err) {
+        return res.status(404).send({
+          status: 'error',
+          message: 'No hay opciones para mostrar! ' + err
+        });
+      }
+    } catch (err) {
+      return res.status(404).send({
+        status: 'error',
+        message: 'No hay menus para mostrar! ' + err
+      });
+    }
+
+    /*OptionUser.find({ "idTypeUser": typeUser  }, (err, optionUsers) => {
       if (err || !optionUsers) {
         return res.status(404).send({
           status: 'error',
           message: 'No hay menus para mostrar!'
         });
       }
-      Option.populate(optionUsers, { path: "_idOption", match: {_idMenu: menu}}, (err, option) => {        
+      Option.populate(optionUsers, { path: "idOption", match: {idMenu: menu}}, (err, option) => {        
         if (err || !option) {
           return res.status(404).send({
             status: 'error',
@@ -96,35 +117,7 @@ var controller = {
           option: option
         });
       });
-    });
-  },
-
-  getUser: (req, res) => {
-    var username = req.body.username
-
-    //Comprobar que existe
-    if (!username || username == null) {
-      return res.status(404).send({
-        status: 'error',
-        messagge: 'Debe enviar el usuario a buscar!'
-      });
-    }
-
-    //Buscar el articulo
-    User.findOne({ "user": username }, (err, user) => {
-      if (err || !user) {
-        return res.status(404).send({
-          status: 'error',
-          message: 'No se encontro el usuario!'
-        });
-      }
-
-      //Devolver en json
-      return res.status(200).send({
-        status: 'success',
-        user
-      });
-    })
+    });*/
   },
 
   update: (req, res) => {

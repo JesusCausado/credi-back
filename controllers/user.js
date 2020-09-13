@@ -5,7 +5,9 @@ var fs = require('fs');
 var path = require('path');
 const bcrypt = require('bcrypt');
 
-var User = require('../models/user')
+var User = require('../models/user');
+var TypeUser = require('../models/typeUser');
+const { use } = require('../routes/routes');
 
 const encript = (pass, saltDefault) => {
   if (saltDefault) {
@@ -28,7 +30,7 @@ var controller = {
     });
   },
 
-  save: (req, res) => {
+  save: async (req, res) => {
     var params = req.body;
 
     try {
@@ -42,7 +44,7 @@ var controller = {
     } catch (err) {
       return res.status(404).send({
         status: 'error',
-        message: 'faltan datos por enviar'
+        message: 'faltan datos por enviar ' + err
       });
     }
 
@@ -57,21 +59,20 @@ var controller = {
       user.email = params.email;
       user.password = pass.hash;
       user.salt = pass.salt;
-      user._idTypeUser = params.typeUser;
+      user.idTypeUser = params.typeUser;
 
-      user.save((err, userStored) => {
-        if (err || !userStored) {
-          return res.status(404).send({
-            status: 'error',
-            message: 'El usuario no se ha guardado'
-          });
-        }
-
+      try {
+        var userStored = await user.save();
         return res.status(200).send({
           status: 'success',
           user: userStored
         });
-      })
+      } catch (err) {
+        return res.status(404).send({
+          status: 'error',
+          message: 'El usuario no se ha guardado ' + err
+        });
+      }
 
     } else {
       return res.status(500).send({
@@ -81,23 +82,22 @@ var controller = {
     }
   },
 
-  getUsers: (req, res) => {
-    User.find((err, users) => {
-      if (err || !users) {
-        return res.status(404).send({
-          status: 'error',
-          message: 'No hay usuarios para mostrar!'
-        });
-      }
-
+  getUsers: async (req, res) => {
+    try {
+      var users = await User.find({});
       return res.status(200).send({
         status: 'success',
         users
       });
-    })
+    } catch (err) {
+      return res.status(404).send({
+        status: 'error',
+        message: 'No hay usuarios para mostrar! ' + err
+      });
+    }
   },
 
-  getUser: (req, res) => {
+  getUser: async (req, res) => {
     var username = req.body.username
     if (!username || username == null) {
       return res.status(404).send({
@@ -105,18 +105,26 @@ var controller = {
         messagge: 'Debe enviar el usuario a buscar!'
       });
     }
-    User.findOne({ "user": username }, (err, user) => {
-      if (err || !user) {
+    try {
+      var user = await User.findOne({ "user": username });
+      try {
+        var typeUser = await TypeUser.populate(user, { path: "idTypeUser"});
+        return res.status(200).send({
+          status: 'success',
+          user: typeUser
+        });
+      } catch (err) {
         return res.status(404).send({
           status: 'error',
-          message: 'No se encontro el usuario!'
+          message: 'No hay opciones para mostrar! ' + err
         });
       }
-      return res.status(200).send({
-        status: 'success',
-        user
+    } catch (err) {
+      return res.status(404).send({
+        status: 'error',
+        message: 'No se encontro el usuario! ' + err
       });
-    })
+    }
   },
 
   update: (req, res) => {

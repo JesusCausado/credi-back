@@ -4,22 +4,22 @@ var validator = require('validator');
 var fs = require('fs');
 var path = require('path');
 
-var Menu = require('../models/menu')
+var Asesor = require('../models/asesor')
 
 var controller = {
 
   test: (req, res) => {
     return res.status(200).send({
-      message: "Controller menu status ok!"
+      message: "Controller Asesor status ok!"
     });
   },
 
   save: async (req, res) => {
     var params = req.body;
-    console.log(params);
     try {
-      var validate_name = !validator.isEmpty(params.name);
-      var validate_typeUser = !validator.isEmpty(params.typeUser);
+      var val_idPrestamista = !validator.isEmpty(params.idPrestamista);
+      var val_idAsesor = !validator.isEmpty(params.idAsesor);
+
     } catch (err) {
       return res.status(404).send({
         status: 'error',
@@ -27,25 +27,24 @@ var controller = {
       });
     }
 
-    if (validate_name && validate_typeUser) {
+    if (val_idPrestamista && val_idAsesor) {
 
-      var menu = new Menu();
-      menu.name = params.name;
-      menu.idTypeUser = params.typeUser;
+      var asesor = new Asesor();
+      asesor.idPrestamista = params.idPrestamista;
+      asesor.idAsesor = params.idAsesor;
 
       try {
-        var menuStored = await menu.save();
+        var asesorStored = await asesor.save();
         return res.status(200).send({
           status: 'success',
-          menu: menuStored
+          asesor: asesorStored
         });
       } catch (err) {
         return res.status(404).send({
           status: 'error',
-          message: 'El menu no se ha guardado ' + err
+          message: 'El asesor no se ha guardado ' + err
         });
-      }  
-
+      }
     } else {
       return res.status(500).send({
         status: 'error',
@@ -54,19 +53,19 @@ var controller = {
     }
   },
 
-  getMenus: async (req, res) => {
+  getAsesor: async (req, res) => {
     try {
-      var menus = await Menu.find({});
-      return res.status(200).send({
-        status: 'success',
-        menus
-      });
-    } catch (err) {
-      return res.status(404).send({
-        status: 'error',
-        message: 'No hay menus para mostrar! ' + err
-      });
-    }  
+        var asesor = await Asesor.find({});
+        return res.status(200).send({
+          status: 'success',
+          asesor
+        });
+      } catch (err) {
+        return res.status(404).send({
+          status: 'error',
+          message: 'No hay asesores para mostrar! ' + err
+        });
+      } 
   },
 
   update: (req, res) => {

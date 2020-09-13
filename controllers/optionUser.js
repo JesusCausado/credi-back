@@ -14,7 +14,7 @@ var controller = {
     });
   },
 
-  save: (req, res) => {
+  save: async (req, res) => {
     var params = req.body;
     try {
       var validate_option = !validator.isEmpty(params.option);
@@ -29,22 +29,21 @@ var controller = {
     if (validate_option && validate_typeUser) {
 
       var option = new OptionUser();
-      option._idOption = params.option;
-      option._idTypeUser = params.typeUser;
+      option.idOption = params.option;
+      option.idTypeUser = params.typeUser;
 
-      option.save((err, optionStored) => {
-        if (err || !optionStored) {
-          return res.status(404).send({
-            status: 'error',
-            message: 'La opcion no se ha guardado'
-          });
-        }
-
+      try {
+        var optionStored = await option.save();
         return res.status(200).send({
           status: 'success',
           option: optionStored
         });
-      })
+      } catch (err) {
+        return res.status(404).send({
+          status: 'error',
+          message: 'Registro no guardado ' + err
+        });
+      }
 
     } else {
       return res.status(500).send({
@@ -54,49 +53,20 @@ var controller = {
     }
   },
 
-  getOptions: (req, res) => {
+  getOptions: async (req, res) => {
     var menu = req.body.menu
-    Option.find({ "_idMenu": menu }, (err, option) => {
-      if (err || !option) {
-        return res.status(404).send({
-          status: 'error',
-          message: 'No hay menus para mostrar!'
-        });
-      }
-
+    try {
+      var option = await Option.find({ "idMenu": menu });
       return res.status(200).send({
         status: 'success',
         option
       });
-    })
-  },
-
-  getUser: (req, res) => {
-    var username = req.body.username
-
-    //Comprobar que existe
-    if (!username || username == null) {
+    } catch (err) {
       return res.status(404).send({
         status: 'error',
-        messagge: 'Debe enviar el usuario a buscar!'
+        message: 'No hay menus para mostrar! ' + err
       });
     }
-
-    //Buscar el articulo
-    User.findOne({ "user": username }, (err, user) => {
-      if (err || !user) {
-        return res.status(404).send({
-          status: 'error',
-          message: 'No se encontro el usuario!'
-        });
-      }
-
-      //Devolver en json
-      return res.status(200).send({
-        status: 'success',
-        user
-      });
-    })
   },
 
   update: (req, res) => {

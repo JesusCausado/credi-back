@@ -10,7 +10,7 @@ var UserSchema = Schema({
   email: String,
   password: String,
   salt: String,
-  _idTypeUser: Schema.Types.ObjectId
+  idTypeUser: Schema.Types.ObjectId
 });
 
 module.exports = mongoose.model('User', UserSchema);

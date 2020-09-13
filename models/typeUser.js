@@ -6,6 +6,7 @@ var Schema = mongoose.Schema;
 var TypeUserSchema = Schema({
   name: String,
   description: String,
+  superAdmin: Boolean,
   admin: Boolean
 });
 

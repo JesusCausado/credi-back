@@ -6,6 +6,7 @@ var path = require('path');
 
 var Prestamo = require('../models/prestamo');
 var PrestamoDet = require('../models/prestamoDet');
+var Asesor = require('../models/asesor');
 
 var controller = {
 
@@ -15,7 +16,7 @@ var controller = {
     });
   },
 
-  save: (req, res) => {
+  save: async (req, res) => {
     var params = req.body;
     /*try {
       var validate_name = !validator.isEmpty(params.name);
@@ -29,40 +30,88 @@ var controller = {
       });
     }*/
 
-    //if (validate_name && validate_menu && validate_systemName && validate_route) {      
-      var gastoOp = 60000;  
-      var prestamo = new Prestamo(); 
-      prestamo.nroPrestamo =  1;  
-      prestamo.tipoPrestamo =  params.tipoPrestamo;  
-      prestamo.ciudad =  params.ciudad;
-      prestamo.vlrSol =  params.valorSol;
-      prestamo.vlrApr =  params.valorApr;
-      prestamo.vlrEnt = prestamo.vlrApr - gastoOp;
-      prestamo.termino =  params.termino;
-      prestamo.interes =  params.interes;
-      prestamo.fechaGrab =  new Date();
-      prestamo.diaPago =  params.diaPago;
-      prestamo.estado = true;
-      prestamo.idClient = params.idClient;
-      //0 ene - 11 dic
-      var hoy = new Date();   
-      var saldoPrestamo = prestamo.vlrApr;
-      var cMensual = 100000;   
-      var cSemestral = 500000;      
-      var comision = 3;
-      var porComision = comision/100;
-      var porcInteres = prestamo.interes/100;
-      var intInicial = prestamo.interes - comision;
-      var porcInicial = intInicial/100;
-      var vlrComision = Math.round(prestamo.vlrApr * porComision);           
-      //Aux
-      var aporteInteres = 0;
-      var aporteCapital = 0;
-      var vlrCuota = 0;
-      var fechaPago = new Date();
+    //if (validate_name && validate_menu && validate_systemName && validate_route) {  
+      try {
+        if (params.tipoPrestamo == "3") {
+          var gastoOp = 0;  
+        } else {
+          var gastoOp = 60000;  
+        }
+        var prestamo = new Prestamo(); 
+        prestamo.nroPrestamo =  1;  
+        prestamo.tipoPrestamo =  params.tipoPrestamo;  
+        prestamo.ciudad =  params.ciudad;
+        prestamo.vlrSol =  params.valorSol;
+        prestamo.vlrApr =  params.valorApr;
+        prestamo.vlrEnt = prestamo.vlrApr - gastoOp;
+        prestamo.termino =  params.termino;
+        prestamo.interes =  params.interes;
+        prestamo.fechaGrab =  new Date();
+        prestamo.diaPago =  params.diaPago;
+        prestamo.estado = true;
+        prestamo.idClient = params.idClient;
+        prestamo.idUsuario = params.idUsuario;
+        //0 ene - 11 dic
+        var hoy = new Date();   
+        var saldoPrestamo = prestamo.vlrApr;
+        var cMensual = 100000;   
+        var cSemestral = 500000;      
+        var comision = 3;
+        var porComision = comision/100;
+        var porcInteres = prestamo.interes/100;
+        var intInicial = prestamo.interes - comision;
+        var porcInicial = intInicial/100;
+        var vlrComision = Math.round(prestamo.vlrApr * porComision);           
+        //Aux
+        var aporteInteres = 0;
+        var aporteCapital = 0;
+        var vlrCuota = 0;
+        var fechaPago = new Date();
 
-      /*try {
         var prestamoStored = await prestamo.save();
+        for (var i = 1; i <= prestamo.termino; i++) { 
+          if (saldoPrestamo <= 0) {
+            break;
+          }       
+          if (params.tipoPrestamo == "3") {
+            saldoPrestamo = prestamo.vlrApr;
+          } 
+          var mes = hoy.getMonth();          
+          if (i!==0) {
+            aporteInteres = Math.round(saldoPrestamo * porcInteres);            
+          } else {
+            aporteInteres = Math.round(saldoPrestamo * porcInicial);
+          }        
+          if (mes == 5 || mes == 11) {
+            aporteCapital = cSemestral;
+          } else {
+            aporteCapital = cMensual;
+          }
+          vlrCuota = aporteInteres + aporteCapital;          
+          saldoPrestamo = saldoPrestamo - aporteCapital;                   
+          fechaPago = hoy;
+          console.log("saldoPrestamo"+ saldoPrestamo +"aporteInteres " + aporteInteres + " aporteCapital " + aporteCapital + " vlrCuota " + vlrCuota + " fechaPago " + fechaPago);          
+
+          var prestamoDet = new PrestamoDet(); 
+          prestamoDet.idPrestamo = prestamoStored._id;
+          prestamoDet.nroCuota =  i;
+          prestamoDet.aptInteres =  aporteInteres;
+          prestamoDet.aptCapital =  aporteCapital;
+          prestamoDet.vlrCuota = vlrCuota;
+          prestamoDet.vlrInteres =  Math.round(saldoPrestamo * porcInteres);          
+          prestamoDet.fechaPago =  fechaPago;
+          prestamoDet.estado = "V";
+          try {
+            var prestamoDetStored = await prestamoDet.save();
+          } catch (err) {
+            return res.status(404).send({
+              status: 'error',
+              message: 'El detalle #' + i + err
+            });
+          }
+          hoy.setMonth(hoy.getMonth() + 1);
+        }
+
         return res.status(200).send({
           status: 'success',
           prestamo: prestamoStored
@@ -72,62 +121,7 @@ var controller = {
           status: 'error',
           message: 'El prestamo no se ha guardado ' + err
         });
-      }*/
-      
-      prestamo.save((err, prestamoStored) => {
-        if (err || !prestamoStored) {
-          return res.status(404).send({
-            status: 'error',
-            message: 'El prestamo no se ha guardado ' + err + prestamoStored
-          });
-        }
-
-        for (var i = 1; i <= prestamo.termino; i++) {                  
-          var mes = hoy.getMonth();
-          console.log(mes);
-          
-          if (i!=0) {
-            aporteInteres = Math.round(saldoPrestamo * porcInteres);
-          } else {
-            aporteInteres = Math.round(saldoPrestamo * porcInicial);
-          }        
-          if (mes == 5 || mes == 11) {
-            aporteCapital = cSemestral;
-          } else {
-            aporteCapital = cMensual;
-          }
-          vlrCuota = aporteInteres + aporteCapital;
-          saldoPrestamo = saldoPrestamo - aporteCapital;
-          fechaPago = hoy;
-          console.log("aporteInteres " + aporteInteres + " aporteCapital " + aporteCapital + " vlrCuota " + vlrCuota + " fechaPago " + fechaPago);          
-
-          var prestamoDet = new PrestamoDet(); 
-          prestamoDet.idPrestamo = prestamoStored._id;
-          prestamoDet.nroCuota =  i;
-          prestamoDet.aptInteres =  aporteInteres;
-          prestamoDet.aptCapital =  aporteCapital;
-          prestamoDet.vlrCuota = vlrCuota;
-          prestamoDet.vlrInteres =  Math.round(saldoPrestamo * porcInteres);
-          prestamoDet.fechaPago =  fechaPago;
-          prestamoDet.estado = "V";
-
-          prestamoDet.save((err2, prestamoDetStored) => {
-            if (err2 || !prestamoDetStored) {
-              return res.status(404).send({
-                status: 'error',
-                message: 'El detalle #' + i
-              });
-            }
-          })
-          hoy.setMonth(hoy.getMonth() + 1);
-        }
-
-        return res.status(200).send({
-          status: 'success',
-          prestamo: prestamoStored
-        });
-      })
-
+      }
     /*} else {
       return res.status(500).send({
         status: 'error',
@@ -136,64 +130,49 @@ var controller = {
     }*/
   },
 
-  getPrestamo: (req, res) => {
-    Prestamo.find({}, (err, prestamo) => {
-      if (err || !prestamo) {
-        return res.status(404).send({
-          status: 'error',
-          message: 'No hay menus para mostrar!'
-        });
+  getPrestamo: async (req, res) => {
+    var params = req.body;
+    var idUsuario = params.id;
+      if (params.admin == 'true') {
+        try {
+          var prestamo = await Prestamo.find({ idUsuario: idUsuario });
+          var asesor = await Asesor.aggregate([{ $match: { idPrestamista: { $gte: idUsuario } } }]);
+          return res.status(200).send({
+            status: 'success',
+            prestamo: asesor
+          });
+        } catch (err) {
+          return res.status(404).send({
+            status: 'error',
+            message: 'No hay opciones para mostrar! ' + err
+          });
+        }     
+      } else {
+        try {
+        var prestamo = await Prestamo.find({ idUsuario: idUsuario });
+        } catch (err) {
+          return res.status(404).send({
+            status: 'error',
+            message: 'No hay prestamos para mostrar! ' + err
+          });
+        }  
       }
-
-      return res.status(200).send({
-        status: 'success',
-        prestamo
-      });
-    })    
   },
 
-  getPrestamo: (req, res) => {
-    Prestamo.find({}, (err, prestamo) => {
-      if (err || !prestamo) {
-        return res.status(404).send({
-          status: 'error',
-          message: 'No hay menus para mostrar!'
-        });
-      }
-
+  getPrestamoDet: async (req, res) => {
+    try {
+      var params = req.body;
+      var prestamoDet = await PrestamoDet.find({"idPrestamo": params.id});
       return res.status(200).send({
         status: 'success',
-        prestamo
+        prestamoDet
       });
-    })    
-  },
-
-  getUser: (req, res) => {
-    var username = req.body.username
-
-    //Comprobar que existe
-    if (!username || username == null) {
+    } catch (err) {
       return res.status(404).send({
         status: 'error',
-        messagge: 'Debe enviar el usuario a buscar!'
+        message: 'No hay prestamos para mostrar! ' + err
       });
-    }
-
-    //Buscar el articulo
-    User.findOne({ "user": username }, (err, user) => {
-      if (err || !user) {
-        return res.status(404).send({
-          status: 'error',
-          message: 'No se encontro el usuario!'
-        });
-      }
-
-      //Devolver en json
-      return res.status(200).send({
-        status: 'success',
-        user
-      });
-    })
+    }   
   },
 
   update: (req, res) => {
@@ -239,31 +218,30 @@ var controller = {
     }
   },
 
-  delete: (req, res) => {
+  delete: async (req, res) => {
     var params = req.body;    
-    var idPrestamo = params.id;  
+    var idPrestamo = params.id;
 
-    Prestamo.findOneAndDelete({ _id: idPrestamo }, (err, prestamooRemoved) => {
-      if (err || !prestamooRemoved) {
-        return res.status(500).send({
+    try {
+      var prestamooRemoved = await Prestamo.findOneAndDelete({ _id: idPrestamo });
+      try {
+        var prestamoDetoRemoved = await PrestamoDet.deleteMany({ idPrestamo: idPrestamo });        
+      } catch (err) {
+        return res.status(404).send({
           status: 'error',
-          message: 'Error al borrar el articulo!'
+          message: 'Error al eliminar el detalle del prestamo! ' + err
         });
-      }
-      PrestamoDet.deleteMany({ idPrestamo: idPrestamo }, (err, prestamoDetoRemoved) => {
-        if (err || !prestamoDetoRemoved) {
-          return res.status(500).send({
-            status: 'error',
-            message: 'Error al borrar el articulo!'
-          });
-        }
-      })
-
+      } 
       return res.status(200).send({
         status: 'success',
-        prestamo: prestamooRemoved
+        prestamooRemoved
       });
-    })
+    } catch (err) {
+      return res.status(404).send({
+        status: 'error',
+        message: 'Error al eliminar el prestamo! ' + err
+      });
+    } 
   }
 };//End controller
 

@@ -16,6 +16,7 @@ var PrestamoSchema = Schema({
   diaPago: String,
   estado: Boolean,
   idClient: Schema.Types.ObjectId,
+  idUsuario: Schema.Types.ObjectId,
 });
 
 module.exports = mongoose.model('Prestamo', PrestamoSchema);

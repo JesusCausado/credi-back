@@ -13,37 +13,35 @@ var controller = {
     });
   },
 
-  login: (req, res) => {
+  login: async (req, res) => {
     var username = req.body.user
     var password = req.body.password
 
-    User.findOne({ user: username }, (err, user) => {
-      if (err || !user) {
+    try {
+      var user = await User.findOne({ user: username });
+      if (!(username === user.user && bcrypt.compareSync(password, user.password))) {
         return res.status(404).send({
-          status: 'error',
-          message: 'Usuario no registrado!'
-        });
-      } else {
-        
-        if (!(username === user.user && bcrypt.compareSync(password, user.password))) {
-          return res.status(404).send({
-            error: 'usuario o contraseña inválidos'
-          })
-        }
-        
-        var tokenData = {
-          username: username
-        }
-
-        var token = jwt.sign(tokenData, 'Secret Password', {
-          expiresIn: 60 * 60 * 24 // expires in 24 hours
+          error: 'usuario o contraseña inválidos'
         })
+      }
+      
+      var tokenData = {
+        username: username
+      }
 
-        return res.status(200).send({
-          token
-        });
-      }  
-    });    
+      var token = jwt.sign(tokenData, 'Secret Password', {
+        expiresIn: 60 * 60 * 24 // expires in 24 hours
+      })
+
+      return res.status(200).send({
+        token
+      });
+    } catch (err) {
+      return res.status(404).send({
+        status: 'error',
+        message: 'Usuario no registrado! ' + err
+      });
+    }
   }
 
 };//End controller

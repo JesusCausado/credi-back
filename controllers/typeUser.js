@@ -14,7 +14,7 @@ var controller = {
     });
   },
 
-  save: (req, res) => {
+  save: async (req, res) => {
     var params = req.body;
     try {
       var validate_name = !validator.isEmpty(params.name);
@@ -35,19 +35,18 @@ var controller = {
       typeUser.description = params.description;
       typeUser.admin = params.admin;
 
-      typeUser.save((err, typeUserStored) => {
-        if (err || !typeUserStored) {
-          return res.status(404).send({
-            status: 'error',
-            message: 'El tipo de usuario no se ha guardado'
-          });
-        }
-
+      try {
+        var typeUserStored = await typeUser.save();
         return res.status(200).send({
           status: 'success',
           typeUser: typeUserStored
         });
-      })
+      } catch (err) {
+        return res.status(404).send({
+          status: 'error',
+          message: 'El tipo de usuario no se ha guardado ' + err
+        });
+      }
 
     } else {
       return res.status(500).send({
@@ -55,27 +54,6 @@ var controller = {
         message: 'Datos invalidos!'
       });
     }
-  },
-
-  getArticles: (req, res) => {
-    var query = Article.find({});
-    //Ultimos articulos
-    var last = req.params.last;
-    if (last || last != undefined) query.limit(1);
-
-    query.sort('_id').exec((err, articles) => {
-      if (err || !articles) {
-        return res.status(404).send({
-          status: 'error',
-          message: 'No hay articulos para mostrar!'
-        });
-      }
-
-      return res.status(200).send({
-        status: 'success',
-        articles
-      });
-    })
   },
 
   getUser: (req, res) => {

@@ -10,6 +10,7 @@ var optionController = require('../controllers/option');
 var optionUserController = require('../controllers/optionUser');
 var clientController = require('../controllers/client');
 var prestamoController = require('../controllers/prestamo');
+var asesorController = require('../controllers/asesor');
 
 var router = express.Router();
 
@@ -26,6 +27,7 @@ router.get('/menu-test', middleware.ensureAuthenticated, menuController.test);
 router.get('/option-test', middleware.ensureAuthenticated, optionController.test);
 router.get('/option-user-test', middleware.ensureAuthenticated, optionUserController.test);
 router.get('/client-test', middleware.ensureAuthenticated, clientController.test);
+router.get('/asesor-test', middleware.ensureAuthenticated, asesorController.test);
 
 //real routes
 router.post('/save-user', middleware.ensureAuthenticated, userController.save);
@@ -54,6 +56,10 @@ router.delete('/client', middleware.ensureAuthenticated, clientController.delete
 
 router.post('/save-prestamo', middleware.ensureAuthenticated, prestamoController.save);
 router.post('/prestamos', middleware.ensureAuthenticated, prestamoController.getPrestamo);
+router.post('/prestamos-det', middleware.ensureAuthenticated, prestamoController.getPrestamoDet);
 router.delete('/prestamo', middleware.ensureAuthenticated, prestamoController.delete);
+
+router.post('/save-asesor', middleware.ensureAuthenticated, asesorController.save);
+router.post('/asesores', middleware.ensureAuthenticated, asesorController.getAsesor);
 
 module.exports = router;

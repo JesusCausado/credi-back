@@ -8,7 +8,7 @@ var OptionSchema = Schema({
   state: Boolean,
   systemName: String,
   route: String,
-  _idMenu: Schema.Types.ObjectId,
+  idMenu: Schema.Types.ObjectId,
 });
 
 module.exports = mongoose.model('Option', OptionSchema);

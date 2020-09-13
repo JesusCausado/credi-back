@@ -5,7 +5,7 @@ var Schema = mongoose.Schema;
 
 var MenuSchema = Schema({
   name: String,
-  _idTypeUser: Schema.Types.ObjectId,
+  idTypeUser: Schema.Types.ObjectId,
 });
 
 module.exports = mongoose.model('Menu', MenuSchema);
