@@ -12,6 +12,7 @@ var PrestamoSchema = Schema({
   vlrEnt: Number,
   termino: String,
   interes: Number,
+  saldo: Number,
   fechaGrab: Date,
   diaPago: String,
   estado: Boolean,

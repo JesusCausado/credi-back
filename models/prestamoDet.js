@@ -11,6 +11,10 @@ var PrestamoDetSchema = Schema({
   vlrInteres: Number,
   fechaPago: Date,
   estado: String,
+  vlrPagado: Number,
+  retiroCajero: Number,
+  entregadoCliente: Number,
+  saldo: Number,
   idPrestamo: Schema.Types.ObjectId,
 });
 

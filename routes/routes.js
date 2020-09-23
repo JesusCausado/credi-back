@@ -55,8 +55,10 @@ router.post('/clients', middleware.ensureAuthenticated, clientController.getClie
 router.delete('/client', middleware.ensureAuthenticated, clientController.delete);
 
 router.post('/save-prestamo', middleware.ensureAuthenticated, prestamoController.save);
-router.post('/prestamos', middleware.ensureAuthenticated, prestamoController.getPrestamo);
+router.post('/prestamos', middleware.ensureAuthenticated, prestamoController.getPrestamos);
+router.post('/prestamo', middleware.ensureAuthenticated, prestamoController.getPrestamo);
 router.post('/prestamos-det', middleware.ensureAuthenticated, prestamoController.getPrestamoDet);
+router.post('/update-prestamo', middleware.ensureAuthenticated, prestamoController.updatePrestDet);
 router.delete('/prestamo', middleware.ensureAuthenticated, prestamoController.delete);
 
 router.post('/save-asesor', middleware.ensureAuthenticated, asesorController.save);

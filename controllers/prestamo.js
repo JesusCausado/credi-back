@@ -46,6 +46,7 @@ var controller = {
         prestamo.vlrEnt = prestamo.vlrApr - gastoOp;
         prestamo.termino =  params.termino;
         prestamo.interes =  params.interes;
+        prestamo.saldo =  params.valorApr;
         prestamo.fechaGrab =  new Date();
         prestamo.diaPago =  params.diaPago;
         prestamo.estado = true;
@@ -101,6 +102,10 @@ var controller = {
           prestamoDet.vlrInteres =  Math.round(saldoPrestamo * porcInteres);          
           prestamoDet.fechaPago =  fechaPago;
           prestamoDet.estado = "V";
+          prestamoDet.vlrPagado = 0;
+          prestamoDet.retiroCajero = 0;
+          prestamoDet.entregadoCliente = 0;
+          prestamoDet.saldo = 0;
           try {
             var prestamoDetStored = await prestamoDet.save();
           } catch (err) {
@@ -130,24 +135,24 @@ var controller = {
     }*/
   },
 
-  getPrestamo: async (req, res) => {
+  getPrestamos: async (req, res) => {
     var params = req.body;
-    var idUsuario = params.id;
-      if (params.admin == 'true') {
+    //var idUsuario = params.id;
+      //if (params.admin == 'true') {
         try {
-          var prestamo = await Prestamo.find({ idUsuario: idUsuario });
-          var asesor = await Asesor.aggregate([{ $match: { idPrestamista: { $gte: idUsuario } } }]);
+          var prestamo = await Prestamo.find(/*{ idUsuario: idUsuario }*/);
+          //var asesor = await Asesor.aggregate([{ $match: { idPrestamista: { $gte: idUsuario } } }]);
           return res.status(200).send({
             status: 'success',
-            prestamo: asesor
+            prestamo
           });
         } catch (err) {
           return res.status(404).send({
             status: 'error',
-            message: 'No hay opciones para mostrar! ' + err
+            message: 'No hay prestamos para mostrar! ' + err
           });
         }     
-      } else {
+      /*} else {
         try {
         var prestamo = await Prestamo.find({ idUsuario: idUsuario });
         } catch (err) {
@@ -156,7 +161,32 @@ var controller = {
             message: 'No hay prestamos para mostrar! ' + err
           });
         }  
+      }*/
+  },
+
+  getPrestamo: async (req, res) => {
+    var params = req.body;
+    try {
+      var prestamo = await Prestamo.findById({ _id: params.id });
+      try {
+        var prestamoDet = await PrestamoDet.find({"idPrestamo": params.id});
+        return res.status(200).send({
+          status: 'success',
+          prestamo,
+          prestamoDet
+        });
+      } catch (err) {
+        return res.status(404).send({
+          status: 'error',
+          message: 'No hay detalle para mostrar! ' + err
+        });
       }
+    } catch (err) {
+      return res.status(404).send({
+        status: 'error',
+        message: 'No hay prestamos para mostrar! ' + err
+      });
+    }   
   },
 
   getPrestamoDet: async (req, res) => {
@@ -175,17 +205,34 @@ var controller = {
     }   
   },
 
-  update: (req, res) => {
-    //Obtener el id del articulo por la url
-    var articleId = req.params.id;
-
+  updatePrestDet: async (req, res) => {
     //Recoger los datos que llegan por put
     var params = req.body;
+    try {
+      var params = req.body;
+      var prestamo = await Prestamo.findById({_id: params.idPrestamo});     
+    } catch (err) {
+      return res.status(404).send({
+        status: 'error',
+        message: 'No hay prestamos para mostrar! ' + err
+      });
+    }   
+
+    params.saldo = prestamo.saldo - params.vlrPagado;
+
+    try {
+      var params = req.body;
+      var prestamo = await Prestamo.findByIdAndUpdate({_id: params.idPrestamo}, { vlrSol: params.saldo}, { new: true });     
+    } catch (err) {
+      return res.status(404).send({
+        status: 'error',
+        message: 'No hay prestamos para mostrar! ' + err
+      });
+    }
 
     //Validar datos
     try {
-      var validate_tittle = !validator.isEmpty(params.tittle);
-      var validate_content = !validator.isEmpty(params.content);
+      var validate_id = !validator.isEmpty(params._id);
     } catch (err) {
       return res.status(500).send({
         status: 'error',
@@ -193,23 +240,21 @@ var controller = {
       });
     }
 
-    if (validate_tittle && validate_content) {
+    if (validate_id) {
       //Find and update
-      Article.findByIdAndUpdate({ _id: articleId }, params, { new: true },
-        (err, articleUpdate) => {
-          if (err || !articleUpdate) {
-            return res.status(500).send({
-              status: 'error',
-              message: 'Error al actualizar el articulo!'
-            });
-          }
-
-          return res.status(200).send({
-            status: 'success',
-            article: articleUpdate
-          });
+      try {
+        var params = req.body;
+        var prestamoDet = await PrestamoDet.findByIdAndUpdate({ _id: params._id }, params, { new: true });
+        return res.status(200).send({
+          status: 'success',
+          prestamoDet
         });
-      //Devolver respuesta
+      } catch (err) {
+        return res.status(404).send({
+          status: 'error',
+          message: 'No hay prestamos para mostrar! ' + err
+        });
+      }   
     } else {
       return res.status(404).send({
         status: 'error',

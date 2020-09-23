@@ -30,7 +30,10 @@ var controller = {
       }
 
       var token = jwt.sign(tokenData, 'Secret Password', {
-        expiresIn: 60 * 60 * 24 // expires in 24 hours
+        //expiresIn: 60 * 60 * 24 // expires in 24 hours
+        //expiresIn: "10h" // it will be expired after 10 hours
+        expiresIn: "20d" // it will be expired after 20 days
+       //expiresIn: 120 // it will be expired after 120ms
       })
 
       return res.status(200).send({
