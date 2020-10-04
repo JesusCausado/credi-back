@@ -7,6 +7,7 @@ var path = require('path');
 var Prestamo = require('../models/prestamo');
 var PrestamoDet = require('../models/prestamoDet');
 var Asesor = require('../models/asesor');
+var Cliente = require('../models/client');
 
 var controller = {
 
@@ -189,6 +190,24 @@ var controller = {
     }   
   },
 
+  getPrestamoClient: async (req, res) => {
+    var params = req.body;
+    try {
+      var prestamo = await Prestamo.find({ "idClient": params.id });
+      var cliente = await Cliente.findById({ _id: params.id });
+      return res.status(200).send({
+        status: 'success',
+        prestamo,
+        cliente
+      });      
+    } catch (err) {
+      return res.status(404).send({
+        status: 'error',
+        message: 'No hay prestamos para mostrar! ' + err
+      });
+    }   
+  },
+
   getPrestamoDet: async (req, res) => {
     try {
       var params = req.body;
@@ -222,7 +241,7 @@ var controller = {
 
     try {
       var params = req.body;
-      var prestamo = await Prestamo.findByIdAndUpdate({_id: params.idPrestamo}, { vlrSol: params.saldo}, { new: true });     
+      var prestamo = await Prestamo.findByIdAndUpdate({_id: params.idPrestamo}, { saldo: params.saldo}, { new: true });     
     } catch (err) {
       return res.status(404).send({
         status: 'error',

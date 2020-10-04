@@ -56,6 +56,7 @@ router.delete('/client', middleware.ensureAuthenticated, clientController.delete
 
 router.post('/save-prestamo', middleware.ensureAuthenticated, prestamoController.save);
 router.post('/prestamos', middleware.ensureAuthenticated, prestamoController.getPrestamos);
+router.post('/prestamos-client', middleware.ensureAuthenticated, prestamoController.getPrestamoClient);
 router.post('/prestamo', middleware.ensureAuthenticated, prestamoController.getPrestamo);
 router.post('/prestamos-det', middleware.ensureAuthenticated, prestamoController.getPrestamoDet);
 router.post('/update-prestamo', middleware.ensureAuthenticated, prestamoController.updatePrestDet);
