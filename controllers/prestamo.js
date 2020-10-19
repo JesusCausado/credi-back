@@ -3,6 +3,7 @@
 var validator = require('validator');
 var fs = require('fs');
 var path = require('path');
+var moment = require('moment');
 
 var Prestamo = require('../models/prestamo');
 var PrestamoDet = require('../models/prestamoDet');
@@ -38,8 +39,13 @@ var controller = {
         } else {
           var gastoOp = 60000;  
         }
+        var last = await Prestamo.findOne().sort({ nroPrestamo: -1 });
         var prestamo = new Prestamo(); 
-        prestamo.nroPrestamo =  1;  
+        if (last == null) {
+          prestamo.nroPrestamo =  1;  
+        }else {
+          prestamo.nroPrestamo = last.nroPrestamo + 1;
+        }        
         prestamo.tipoPrestamo =  params.tipoPrestamo;  
         prestamo.ciudad =  params.ciudad;
         prestamo.vlrSol =  params.valorSol;
@@ -48,16 +54,17 @@ var controller = {
         prestamo.termino =  params.termino;
         prestamo.interes =  params.interes;
         prestamo.saldo =  params.valorApr;
-        prestamo.fechaGrab =  new Date();
+        prestamo.fechaGrab =  moment().format('l');
         prestamo.diaPago =  params.diaPago;
         prestamo.estado = true;
+        prestamo.tipoPrimas =  params.tipoPrimas;
+        prestamo.vlrPrimas =  params.valorPrimas;
+        prestamo.vlrMensual =  params.valorMensual;
         prestamo.idClient = params.idClient;
         prestamo.idUsuario = params.idUsuario;
-        //0 ene - 11 dic
-        var hoy = new Date();   
-        var saldoPrestamo = prestamo.vlrApr;
-        var cMensual = 100000;   
-        var cSemestral = 500000;      
+        //0 ene - 11 dic 
+        var hoy = moment().set('date', prestamo.diaPago).add(1, 'months').format('l');
+        var saldoPrestamo = prestamo.vlrApr;   
         var comision = 3;
         var porComision = comision/100;
         var porcInteres = prestamo.interes/100;
@@ -68,7 +75,7 @@ var controller = {
         var aporteInteres = 0;
         var aporteCapital = 0;
         var vlrCuota = 0;
-        var fechaPago = new Date();
+        var fechaPago = moment().format('l');
 
         var prestamoStored = await prestamo.save();
         for (var i = 1; i <= prestamo.termino; i++) { 
@@ -78,21 +85,36 @@ var controller = {
           if (params.tipoPrestamo == "3") {
             saldoPrestamo = prestamo.vlrApr;
           } 
-          var mes = hoy.getMonth();          
+          var mes = moment(hoy).format('M');        
           if (i!==0) {
             aporteInteres = Math.round(saldoPrestamo * porcInteres);            
           } else {
             aporteInteres = Math.round(saldoPrestamo * porcInicial);
-          }        
-          if (mes == 5 || mes == 11) {
-            aporteCapital = cSemestral;
+          } 
+          if (prestamo.tipoPrimas == 1) {
+            if (mes == 5 || mes == 11) {
+              aporteCapital = prestamo.vlrPrimas;
+            } else {
+              aporteCapital = prestamo.vlrMensual;
+            }
+          } else if (prestamo.tipoPrimas == 2) {
+            if (mes == 5) {
+              aporteCapital = prestamo.vlrPrimas;
+            } else {
+              aporteCapital = prestamo.vlrMensual;
+            }
           } else {
-            aporteCapital = cMensual;
-          }
+            if (mes == 11) {
+              aporteCapital = prestamo.vlrPrimas;
+            } else {
+              aporteCapital = prestamo.vlrMensual;
+            }
+          }     
+          
           vlrCuota = aporteInteres + aporteCapital;          
           saldoPrestamo = saldoPrestamo - aporteCapital;                   
           fechaPago = hoy;
-          console.log("saldoPrestamo"+ saldoPrestamo +"aporteInteres " + aporteInteres + " aporteCapital " + aporteCapital + " vlrCuota " + vlrCuota + " fechaPago " + fechaPago);          
+          //console.log("saldoPrestamo"+ saldoPrestamo +"aporteInteres " + aporteInteres + " aporteCapital " + aporteCapital + " vlrCuota " + vlrCuota + " fechaPago " + fechaPago);          
 
           var prestamoDet = new PrestamoDet(); 
           prestamoDet.idPrestamo = prestamoStored._id;
@@ -115,7 +137,7 @@ var controller = {
               message: 'El detalle #' + i + err
             });
           }
-          hoy.setMonth(hoy.getMonth() + 1);
+          hoy = moment(hoy).add(1, 'months').format('l');
         }
 
         return res.status(200).send({
@@ -169,12 +191,20 @@ var controller = {
     var params = req.body;
     try {
       var prestamo = await Prestamo.findById({ _id: params.id });
+      if (prestamo != null) {
+        var cliente = await Cliente.findById({ _id: prestamo.idClient });
+      } 
       try {
-        var prestamoDet = await PrestamoDet.find({"idPrestamo": params.id});
+        if (params.cuota != null) {
+          var prestamoDet = await PrestamoDet.find({idPrestamo: params.id, nroCuota:{$lte:params.cuota}});
+        } else {
+          var prestamoDet = await PrestamoDet.find({idPrestamo: params.id});
+        }        
         return res.status(200).send({
           status: 'success',
           prestamo,
-          prestamoDet
+          prestamoDet,
+          cliente
         });
       } catch (err) {
         return res.status(404).send({
@@ -287,8 +317,20 @@ var controller = {
     var idPrestamo = params.id;
 
     try {
+      var prestamoCount = await PrestamoDet.countDocuments({ idPrestamo: idPrestamo, estado: 'L' }); 
+      if (prestamoCount >= 1) {
+        return res.status(404).send({
+          status: 'error',
+          message: 'No puede eliminar el prestamo, existen cuotas liquidadas!'
+        });
+      }
+    } catch (error) {
+      //No hago nada
+    }
+
+    try {
       var prestamooRemoved = await Prestamo.findOneAndDelete({ _id: idPrestamo });
-      try {
+      try {        
         var prestamoDetoRemoved = await PrestamoDet.deleteMany({ idPrestamo: idPrestamo });        
       } catch (err) {
         return res.status(404).send({
@@ -305,7 +347,7 @@ var controller = {
         status: 'error',
         message: 'Error al eliminar el prestamo! ' + err
       });
-    } 
+    }
   }
 };//End controller
 

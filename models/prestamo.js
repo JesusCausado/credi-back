@@ -16,6 +16,9 @@ var PrestamoSchema = Schema({
   fechaGrab: Date,
   diaPago: String,
   estado: Boolean,
+  tipoPrimas: String,
+  vlrPrimas: Number,
+  vlrMensual: Number,
   idClient: Schema.Types.ObjectId,
   idUsuario: Schema.Types.ObjectId,
 });
