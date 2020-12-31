@@ -3,7 +3,7 @@
 var validator = require('validator');
 var jwt = require('jsonwebtoken');
 var User = require('../models/user');
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 
 var controller = {
 

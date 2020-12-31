@@ -3,7 +3,7 @@
 var validator = require('validator');
 var fs = require('fs');
 var path = require('path');
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 
 var User = require('../models/user');
 var TypeUser = require('../models/typeUser');

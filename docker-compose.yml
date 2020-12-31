@@ -1,0 +1,9 @@
+version: "3"
+
+services:
+  web:
+    container_name: credits_pp
+    restart: always
+    build: .
+    ports:
+      - "4000:4000"
